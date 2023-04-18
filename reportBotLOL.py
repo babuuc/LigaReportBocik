@@ -5,6 +5,7 @@ from lcu_driver import Connector
 
 connector = Connector()
 
+
 @connector.ready
 async def connect(conn):
     summoner_name = input("Nick: ")
@@ -19,7 +20,19 @@ async def connect(conn):
         exit(0)
     response = await conn.request('get', f"/lol-match-history/v1/products/lol/{summoner_puid}/matches")
     response = await response.json()
-    game_id = response['games']['games'][1]['gameId']
+
+    min_kda = float('inf')
+    game_id = None
+    for game in response['games']['games']:
+        if 'stats' in game:
+            kills = game['stats']['general']['kills']
+            deaths = game['stats']['general']['deaths']
+            assists = game['stats']['general']['assists']
+            kda = (kills + assists) / max(deaths, 1)
+            if kda < min_kda:
+                min_kda = kda
+                game_id = game['gameId']
+
     while True:
         report_data = {
             "comment": "he literally trolls the game, how is he even allowed to play",
@@ -41,5 +54,6 @@ async def connect(conn):
             print("\033c", end="")
             time.sleep(1)
             print(f"\n\nWaiting 1 hours...: {i // 60} min {i % 60} sec")
+
 
 connector.start()
